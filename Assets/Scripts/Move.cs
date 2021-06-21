@@ -4,10 +4,14 @@ using UnityEngine;
 
 public class Move : MonoBehaviour
 {
-	public float lamda;
+	float jumpforce=15;
+	bool grounded=false;
+	Vector3 impvec;
+	public Transform shot;
+	bool jump=true;
 	ParticleSystem.EmissionModule em;
+	float aim =50;
 	Camera cam;
-	GameObject hitObj;
 	public Transform camt;
 	Rigidbody rb;
 	bool hooked=false;
@@ -30,21 +34,22 @@ public class Move : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
 		float h=Input.GetAxis("Horizontal");
 		float v=Input.GetAxis("Vertical");
 		Vector3 vec=transform.forward*v + transform.right*h;
 		vec/=Mathf.Sqrt(2);
-		rb.AddForce(vec*24);	
+		if (grounded||hooked){
+			rb.AddForce(vec*24);	
+		}else{
+			rb.AddForce(vec*15);	
+		}
 
 		Vector3 mpos = Input.mousePosition;
 		mpos.z=1;
 		RaycastHit rh;
-		bool hit = Physics.Raycast(camt.position,camt.forward*.9f + camt.up*.1f,out rh,50,1<<7,QueryTriggerInteraction.UseGlobal);
+		bool hit = Physics.Raycast(camt.position,camt.forward*.95f + camt.up*.05f,out rh,50,1<<7,QueryTriggerInteraction.UseGlobal);
 		if(hit){
-			if (hitObj==null){
-				hitObj = Instantiate(Resources.Load("Hit") as GameObject);
-			}
+			aim=20;
 			if(Input.GetMouseButtonDown(1)){
 				if(hooked){
 					Destroy(hook);
@@ -60,10 +65,8 @@ public class Move : MonoBehaviour
 				hookPoint=rh.point;	
 				hooked=!hooked;
 			}
-			hitObj.transform.position=rh.point;
 		}else{
-			Destroy(hitObj);
-			hitObj=null;
+			aim=50;
 			if(Input.GetMouseButtonDown(1)){
 				Destroy(hook);
 				Destroy(line);
@@ -76,7 +79,6 @@ public class Move : MonoBehaviour
 			if(connected){
 				hook.transform.position=hookPoint;
 				Vector3 acc=hookPoint-transform.position;
-				acc*=lamda;
 				rb.AddForce(2*acc);
 				Vector3 hand = transform.position+transform.right*.5f;
 				line.transform.position = (hand+hook.transform.position)/2;
@@ -99,5 +101,34 @@ public class Move : MonoBehaviour
 			PlayerControl.Alf.UpdateBars();
 			rb.AddForce(50*camt.forward);				
 		}
+
+		for (int i=0;i<4;i++){
+			Transform child = shot.GetChild(i);
+			Vector3 aimVec = new Vector3(Mathf.Sin(i*Mathf.PI/2),Mathf.Cos(i*Mathf.PI/2)) * aim;
+			aimVec = aimVec -child.localPosition;
+			child.localPosition+=aimVec*Time.deltaTime*4;
+		}
+
+		if (Input.GetAxis("Jump")>0 && jump){
+			jump=false;
+			rb.AddForce(impvec*jumpforce,ForceMode.Impulse);
+		}
     }
+
+	void OnCollisionStay(Collision col){
+		if(Mathf.Sqrt(col.impulse.x * col.impulse.x + col.impulse.z *col.impulse.z)<col.impulse.y){
+			grounded=true;
+		}
+	}
+
+	void OnCollisionExit(Collision col){
+		grounded=false;
+	}
+
+	void OnCollisionEnter(Collision col){
+		if(Mathf.Sqrt(col.impulse.x * col.impulse.x + col.impulse.z *col.impulse.z)<col.impulse.y){
+			impvec=col.impulse.normalized;
+			jump=true;
+		}
+	}
 }
