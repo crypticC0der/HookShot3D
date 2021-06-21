@@ -20,8 +20,8 @@ public class Turn : MonoBehaviour
 		if (preped){
 			Vector3 diff = mpos-lmousepos;
 			diff*=Time.deltaTime;
-			diff.x*=90;
-			diff.y*=-45;
+			diff.x*=120;
+			diff.y*=-60;
 			transform.Rotate(Vector3.up*diff.x);
 			camt.Rotate(Vector3.right*diff.y);
 			float dot = Globals.Dot(camt.localEulerAngles,Vector3.right);
