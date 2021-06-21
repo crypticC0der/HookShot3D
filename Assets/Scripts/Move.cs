@@ -29,21 +29,38 @@ public class Move : MonoBehaviour
     }
 
 	void FixedUpdate(){
-		rb.AddForce(Physics.gravity*5f,ForceMode.Acceleration);
-	}
-    // Update is called once per frame
-    void Update()
-    {
 		float h=Input.GetAxis("Horizontal");
 		float v=Input.GetAxis("Vertical");
 		Vector3 vec=transform.forward*v + transform.right*h;
 		vec/=Mathf.Sqrt(2);
 		if (grounded||hooked){
-			rb.AddForce(vec*24);	
+			rb.AddForce(vec*60);	
 		}else{
-			rb.AddForce(vec*15);	
+			rb.AddForce(vec*40);	
 		}
-
+		if(hooked && connected){
+			hook.transform.position=hookPoint;
+			Vector3 acc=hookPoint-transform.position;
+			rb.AddForce(5*acc);
+		}
+		if (PlayerControl.Alf.boosting){
+			PlayerControl.Alf.fuel -=Time.deltaTime;
+			if (PlayerControl.Alf.fuel<0){
+				PlayerControl.Alf.fuel=0;
+				PlayerControl.Alf.boosting=false;
+			}
+			PlayerControl.Alf.UpdateBars();
+			rb.AddForce(75*camt.forward);				
+		}
+		if (Input.GetAxis("Jump")>0 && jump){
+			jump=false;
+			rb.AddForce(impvec*jumpforce,ForceMode.Impulse);
+		}
+		rb.AddForce(Physics.gravity*5f,ForceMode.Acceleration);
+	}
+    // Update is called once per frame
+    void Update()
+    {
 		Vector3 mpos = Input.mousePosition;
 		mpos.z=1;
 		RaycastHit rh;
@@ -77,13 +94,10 @@ public class Move : MonoBehaviour
 
 		if(hooked){
 			if(connected){
-				hook.transform.position=hookPoint;
-				Vector3 acc=hookPoint-transform.position;
-				rb.AddForce(2*acc);
 				Vector3 hand = transform.position+transform.right*.5f;
 				line.transform.position = (hand+hook.transform.position)/2;
 				Vector3 dist=hook.transform.position-hand;
-				line.transform.localScale=new Vector3(0.1f,0.1f,Globals.Pythag(dist));
+				line.transform.localScale=new Vector3(0.05f,0.05f,Globals.Pythag(dist));
 				line.transform.LookAt(hand);
 			}else{
 				hook.transform.position+=hookVel*Time.deltaTime;
@@ -92,15 +106,6 @@ public class Move : MonoBehaviour
 		}
 		PlayerControl.Alf.boosting =(Input.GetAxis("Boost")>0 && PlayerControl.Alf.fuel>0) && (PlayerControl.Alf.boosting||PlayerControl.Alf.maxFuel/2<PlayerControl.Alf.fuel);
 		em.enabled=PlayerControl.Alf.boosting;
-		if (PlayerControl.Alf.boosting){
-			PlayerControl.Alf.fuel -=Time.deltaTime;
-			if (PlayerControl.Alf.fuel<0){
-				PlayerControl.Alf.fuel=0;
-				PlayerControl.Alf.boosting=false;
-			}
-			PlayerControl.Alf.UpdateBars();
-			rb.AddForce(50*camt.forward);				
-		}
 
 		for (int i=0;i<4;i++){
 			Transform child = shot.GetChild(i);
@@ -109,10 +114,6 @@ public class Move : MonoBehaviour
 			child.localPosition+=aimVec*Time.deltaTime*4;
 		}
 
-		if (Input.GetAxis("Jump")>0 && jump){
-			jump=false;
-			rb.AddForce(impvec*jumpforce,ForceMode.Impulse);
-		}
     }
 
 	void OnCollisionStay(Collision col){

@@ -19,8 +19,6 @@ public class Turn : MonoBehaviour
 		Vector3 mpos=Input.mousePosition;
 		if (preped){
 			Vector3 diff = mpos-lmousepos;
-			if (diff.x>100 || diff.y<-100){diff.x=0;}
-			if (diff.y>100 || diff.y<-100){diff.y=0;}
 			diff*=Time.deltaTime;
 			diff.x*=120;
 			diff.y*=-60;
